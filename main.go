@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"runtime"
 )
 
 func addAmount(amt int, ch chan int) {
@@ -35,7 +36,7 @@ func main() {
 		for i := 0; i < *iterations; i++ {
 			addAmount(1, amountChan)
 			// fmt.Println("Balance:", balance, i, "+")
-			// runtime.Gosched()
+			runtime.Gosched()
 		}
 		done <- true
 	}()
@@ -46,7 +47,7 @@ func main() {
 		for i := 0; i < *iterations; i++ {
 			addAmount(-1, amountChan)
 			// fmt.Println("Balance:", balance, i, "-")
-			// runtime.Gosched()
+			runtime.Gosched()
 		}
 		done <- true
 	}()
