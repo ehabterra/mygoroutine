@@ -6,12 +6,10 @@ import (
 	"runtime"
 )
 
-func addAmount(amt int, ch chan int) {
-	ch <- amt
-}
-
 func main() {
 	balance := 0
+	inDone := false
+	deDone := false
 
 	iterations := flag.Int("it", 10000000, "number of iterations")
 
@@ -19,42 +17,57 @@ func main() {
 
 	fmt.Println("Iterations:", *iterations)
 	amountChan := make(chan int)
-	done := make(chan bool, 2)
 
-	go func() {
-		for {
-			select {
-			case amount := <-amountChan:
-				balance += amount
-			}
-		}
-	}()
+	defer close(amountChan)
+
+	incrementDone := make(chan bool)
 
 	// increment
 	go func() {
 		fmt.Println("Increment")
 		for i := 0; i < *iterations; i++ {
-			addAmount(1, amountChan)
+			amountChan <- 1
 			// fmt.Println("Balance:", balance, i, "+")
 			runtime.Gosched()
 		}
-		done <- true
+		incrementDone <- true
 	}()
+
+	decrementDone := make(chan bool)
 
 	// decrement
 	go func() {
 		fmt.Println("Decrement")
 		for i := 0; i < *iterations; i++ {
-			addAmount(-1, amountChan)
+			amountChan <- -1
 			// fmt.Println("Balance:", balance, i, "-")
 			runtime.Gosched()
 		}
-		done <- true
+		decrementDone <- true
 	}()
 
-	<-done // increment
-	<-done // decrement
+	// print final balance and close channels
+	cleanUp := func() {
+		close(incrementDone)
+		close(decrementDone)
+		fmt.Printf("Final balance: %v\n", balance)
+	}
 
-	fmt.Printf("Final balance: %v\n", balance)
+	for {
+		select {
+		case amount := <-amountChan:
+			balance += amount
+		case inDone = <-incrementDone:
+			if inDone && deDone {
+				cleanUp()
+				return
+			}
+		case deDone = <-decrementDone:
+			if inDone && deDone {
+				cleanUp()
+				return
+			}
+		}
+	}
 
 }
