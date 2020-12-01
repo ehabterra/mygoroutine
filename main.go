@@ -8,14 +8,16 @@ import (
 
 func main() {
 	balance := 0
-	inDone := false
-	deDone := false
+
+	finishedIncremental := false
+	finishedDecremental := false
 
 	iterations := flag.Int("it", 10000000, "number of iterations")
 
 	flag.Parse()
 
 	fmt.Println("Iterations:", *iterations)
+
 	amountChan := make(chan int)
 
 	defer close(amountChan)
@@ -57,13 +59,13 @@ func main() {
 		select {
 		case amount := <-amountChan:
 			balance += amount
-		case inDone = <-incrementDone:
-			if inDone && deDone {
+		case finishedIncremental = <-incrementDone:
+			if finishedIncremental && finishedDecremental {
 				cleanUp()
 				return
 			}
-		case deDone = <-decrementDone:
-			if inDone && deDone {
+		case finishedDecremental = <-decrementDone:
+			if finishedIncremental && finishedDecremental {
 				cleanUp()
 				return
 			}
