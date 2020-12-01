@@ -20,8 +20,6 @@ func main() {
 
 	amountChan := make(chan int)
 
-	defer close(amountChan)
-
 	incrementDone := make(chan bool)
 
 	// increment
@@ -52,6 +50,7 @@ func main() {
 	cleanUp := func() {
 		close(incrementDone)
 		close(decrementDone)
+		close(amountChan)
 		fmt.Printf("Final balance: %v\n", balance)
 	}
 
